@@ -1,23 +1,22 @@
-import { Route, BrowserRouter as Router, Routes } from "react-router";
+﻿import { Route, BrowserRouter as Router, Routes } from "react-router";
 import { ScrollToTop } from "./components/common/ScrollToTop";
+import ProtectedRoute from "./components/ProtectedRoute";
 import AppLayout from "./layout/AppLayout";
 import SignIn from "./pages/AuthPages/SignIn";
-import SignUp from "./pages/AuthPages/SignUp";
-import Calendar from "./pages/Calendar";
-import BarChart from "./pages/Charts/BarChart";
-import LineChart from "./pages/Charts/LineChart";
-import Home from "./pages/Dashboard/Ecommerce";
-import FormElements from "./pages/Forms/FormElements";
-import Blank from "./pages/OtherPage/Blank";
 import NotFound from "./pages/OtherPage/NotFound";
-import BasicTables from "./pages/Tables/BasicTables";
-import Alerts from "./pages/UiElements/Alerts";
-import Avatars from "./pages/UiElements/Avatars";
-import Badges from "./pages/UiElements/Badges";
-import Buttons from "./pages/UiElements/Buttons";
-import Images from "./pages/UiElements/Images";
-import Videos from "./pages/UiElements/Videos";
-import UserProfiles from "./pages/UserProfiles";
+import AdminDashboard from "./pages/Admin/Dashboard";
+import AdminUsers from "./pages/Admin/Users";
+import AdminProducts from "./pages/Admin/Products";
+import AdminOrders from "./pages/Admin/Orders";
+import ModuleUnavailable from "./pages/Admin/ModuleUnavailable";
+import AdminNotifications from "./pages/Admin/Notifications";
+import AdminAnalytics from "./pages/Admin/Analytics";
+import AdminAuditLogs from "./pages/Admin/AuditLogs";
+import AdminSettings from "./pages/Admin/Settings";
+import AdminSecurity from "./pages/Admin/Security";
+import AdminSellers from "./pages/Admin/Sellers";
+import AdminMessages from "./pages/Admin/Messages";
+import AdminSupport from "./pages/Admin/Support";
 
 export default function App() {
   return (
@@ -25,39 +24,43 @@ export default function App() {
       <Router>
         <ScrollToTop />
         <Routes>
-          {/* Dashboard Layout */}
-          <Route element={<AppLayout />}>
-            <Route index path="/" element={<Home />} />
-
-            {/* Others Page */}
-            <Route path="/profile" element={<UserProfiles />} />
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/blank" element={<Blank />} />
-
-            {/* Forms */}
-            <Route path="/form-elements" element={<FormElements />} />
-
-            {/* Tables */}
-            <Route path="/basic-tables" element={<BasicTables />} />
-
-            {/* Ui Elements */}
-            <Route path="/alerts" element={<Alerts />} />
-            <Route path="/avatars" element={<Avatars />} />
-            <Route path="/badge" element={<Badges />} />
-            <Route path="/buttons" element={<Buttons />} />
-            <Route path="/images" element={<Images />} />
-            <Route path="/videos" element={<Videos />} />
-
-            {/* Charts */}
-            <Route path="/line-chart" element={<LineChart />} />
-            <Route path="/bar-chart" element={<BarChart />} />
+          {/* Admin Layout - PROTÉGÉ */}
+          <Route
+            element={
+              <ProtectedRoute>
+                <AppLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index path="/" element={<AdminDashboard />} />
+            <Route path="/users" element={<AdminUsers />} />
+            <Route path="/products" element={<AdminProducts />} />
+            <Route path="/orders" element={<AdminOrders />} />
+            <Route path="/sellers" element={<AdminSellers />} />
+            <Route path="/messages" element={<AdminMessages />} />
+            <Route path="/support" element={<AdminSupport />} />
+            <Route path="/analytics" element={<AdminAnalytics />} />
+            <Route path="/stats" element={<AdminAnalytics />} />
+            <Route path="/audit-logs" element={<AdminAuditLogs />} />
+            <Route path="/settings" element={<AdminSettings />} />
+            <Route path="/security" element={<AdminSecurity />} />
+            <Route path="/notifications" element={<AdminNotifications />} />
+            <Route
+              path="/finance"
+              element={
+                <ModuleUnavailable
+                  title="Finances"
+                  description="Transactions, paiements vendeurs et remboursements."
+                  requiredContract="API des transactions, validation des paiements, remboursements et retraits vendeurs."
+                />
+              }
+            />
           </Route>
 
-          {/* Auth Layout */}
+          {/* Auth - PUBLIC */}
           <Route path="/signin" element={<SignIn />} />
-          <Route path="/signup" element={<SignUp />} />
 
-          {/* Fallback Route */}
+          {/* Fallback */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>

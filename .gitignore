@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Environment
+.env
+.env.production
+.env.*.local
+
 # Editor directories and files
 .commandcode
 .idea
@@ -21,3 +26,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Vercel
+.vercel

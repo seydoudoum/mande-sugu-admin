@@ -4,7 +4,7 @@ import { getLanguage, languages, type Locale } from "@/i18n/languages";
 import { cn } from "@/utils";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
+import { useAuthStore } from "@/stores/authStore";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 
@@ -13,6 +13,7 @@ export default function UserDropdown() {
   const [isSubDropdownOpen, setIsSubDropdownOpen] = useState(false);
   const subDropdownRef = useRef<HTMLLIElement>(null);
   const { t } = useTranslation();
+  const { user, logout } = useAuthStore();
   const { language: locale, setLanguage } = useLanguage();
   const currentLang = getLanguage(locale as Locale);
   const CurrentFlagIcon = currentLang.FlagIcon;
@@ -49,11 +50,13 @@ export default function UserDropdown() {
         onClick={toggleDropdown}
         className="dropdown-toggle flex items-center text-gray-700 dark:text-gray-400"
       >
-        <span className="me-3 h-11 w-11 overflow-hidden rounded-full">
-          <img src="/images/user/owner.png" alt="User" />
+        <span className="me-3 flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-[#FF6A00] text-white font-bold">
+          {user?.full_name?.charAt(0).toUpperCase() || 'A'}
         </span>
 
-        <span className="me-1 block text-theme-sm font-medium">Musharof</span>
+        <span className="me-1 block text-theme-sm font-medium">
+          {user?.full_name || 'Admin'}
+        </span>
         <svg
           className={`stroke-gray-500 transition-transform duration-200 dark:stroke-gray-400 ${
             isOpen ? "rotate-180" : ""
@@ -81,10 +84,10 @@ export default function UserDropdown() {
       >
         <div>
           <span className="block text-theme-sm font-medium text-gray-700 no-underline dark:text-gray-400">
-            Musharof Chowdhury
+            {user?.full_name || 'Admin'}
           </span>
           <span className="mt-0.5 block text-theme-xs text-gray-500 no-underline dark:text-gray-400">
-            randomuser@pimjo.com
+            {user?.email || 'admin@mande-sugu.com'}
           </span>
         </div>
 
@@ -191,10 +194,8 @@ export default function UserDropdown() {
                     strokeLinejoin="round"
                   />
                 </svg>
-
                 <span>{t("userDropdown.language")}</span>
               </span>
-
               <span className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-theme-xs font-medium text-gray-700 dark:border-gray-800 dark:bg-white/3 dark:text-gray-300">
                 <span>{currentLang.shortName}</span>
                 <CurrentFlagIcon className="size-3.5 shrink-0 overflow-hidden rounded-full" />
@@ -207,7 +208,6 @@ export default function UserDropdown() {
                   {languages.map((language) => {
                     const isSelected = locale === language.id;
                     const FlagIcon = language.FlagIcon;
-
                     return (
                       <li key={language.id}>
                         <button
@@ -236,7 +236,6 @@ export default function UserDropdown() {
                             <FlagIcon className="size-5 shrink-0 overflow-hidden rounded-full" />
                             <span className="truncate">{language.name}</span>
                           </span>
-
                           {language.badge && (
                             <span className="rounded bg-warning-50 px-1.5 py-0.5 text-theme-xs font-semibold text-warning-600 dark:bg-warning-500/15 dark:text-warning-400">
                               {language.badge}
@@ -251,12 +250,16 @@ export default function UserDropdown() {
             )}
           </li>
         </ul>
-        <Link
-          to="/signin"
-          className="group mt-3 flex items-center gap-3 rounded-lg px-3 py-2 text-theme-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+
+        <button
+          onClick={() => {
+            logout()
+            window.location.href = '/signin'
+          }}
+          className="group mt-3 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-theme-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
         >
           <svg
-            className="fill-gray-500 group-hover:fill-gray-700 dark:group-hover:fill-gray-300"
+            className="fill-red-500 group-hover:fill-red-600"
             width="24"
             height="24"
             viewBox="0 0 24 24"
@@ -270,8 +273,8 @@ export default function UserDropdown() {
               fill=""
             />
           </svg>
-          {t("userDropdown.signOut")}
-        </Link>
+          Déconnexion
+        </button>
       </Dropdown>
     </div>
   );
