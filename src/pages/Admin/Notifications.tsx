@@ -2,8 +2,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { getAlerts, type DashboardAlert } from '../../api/admin'
 import AlertsPanel from '../../components/dashboard/AlertsPanel'
 import { RefreshIcon } from '../../icons'
-import AdminJsonAction from '../../components/admin/AdminJsonAction'
-import { broadcastAdminNotification } from '../../api/admin-extended'
 
 function errorMessage(error: unknown): string {
   return error instanceof Error
@@ -58,12 +56,6 @@ export default function AdminNotifications() {
         </button>
       </header>
 
-      <p className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-900 dark:border-orange-500/20 dark:bg-orange-500/10 dark:text-orange-200">
-        Cette page affiche les alertes disponibles via l’API. Le contrat ne
-        prévoit pas de flux temps réel ni d’acquittement; le schéma de diffusion
-        de masse doit être saisi explicitement dans le formulaire ci-dessous.
-      </p>
-
       {error && (
         <div
           className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300"
@@ -91,15 +83,6 @@ export default function AdminNotifications() {
       ) : (
         <AlertsPanel alerts={alerts} />
       )}
-
-      <AdminJsonAction
-        buttonLabel="Envoyer la diffusion"
-        confirmMessage="Envoyer cette notification à l’ensemble des destinataires configurés côté backend ?"
-        description="Le backend ne documente pas le schéma du payload; fournissez le JSON attendu sans données préremplies."
-        execute={broadcastAdminNotification}
-        payloadLabel="Corps JSON défini par le backend"
-        title="Notification de masse"
-      />
     </div>
   )
 }

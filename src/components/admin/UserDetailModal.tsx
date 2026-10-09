@@ -2,24 +2,12 @@ import type { User } from '@/api/admin-users'
 import { getRoleLabel } from '@/components/dashboard/dashboardUtils'
 import { Modal } from '@/components/ui/modal'
 
-export type UserAdminAction =
-  | 'reset-password'
-  | 'ban'
-  | 'unban'
-  | 'force-logout'
-  | 'activity'
-  | 'sessions'
-  | 'login-history'
-
 interface UserDetailModalProps {
   isOpen: boolean
   loading: boolean
   user: User | null
   error: string | null
   onClose: () => void
-  onAction: (action: UserAdminAction) => void
-  actionLoading: UserAdminAction | null
-  actionData: { title: string; value: unknown } | null
 }
 
 function Detail({ label, value }: { label: string; value: string | number }) {
@@ -39,9 +27,6 @@ export default function UserDetailModal({
   user,
   error,
   onClose,
-  onAction,
-  actionLoading,
-  actionData,
 }: UserDetailModalProps) {
   return (
     <Modal
@@ -115,50 +100,6 @@ export default function UserDetailModal({
               }
             />
           </dl>
-          <div className="mt-6">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-              Actions administrateur
-            </h3>
-            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {(
-                [
-                  ['reset-password', 'Réinitialiser le mot de passe'],
-                  ['ban', 'Bannir'],
-                  ['unban', 'Débannir'],
-                  ['force-logout', 'Forcer la déconnexion'],
-                  ['activity', 'Voir l’activité'],
-                  ['sessions', 'Voir les sessions'],
-                  ['login-history', 'Historique de connexion'],
-                ] as const
-              ).map(([action, label]) => (
-                <button
-                  className="rounded-xl border border-gray-200 px-3 py-2.5 text-start text-sm font-medium text-gray-700 transition hover:border-orange-300 hover:text-orange-700 disabled:cursor-wait disabled:opacity-60 dark:border-gray-700 dark:text-gray-200 dark:hover:border-orange-500 dark:hover:text-orange-300"
-                  disabled={actionLoading !== null}
-                  key={action}
-                  onClick={() => onAction(action)}
-                  type="button"
-                >
-                  {actionLoading === action ? 'Chargement…' : label}
-                </button>
-              ))}
-            </div>
-          </div>
-          {actionData && (
-            <section className="mt-5 rounded-xl border border-gray-200 p-4 dark:border-gray-700">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                {actionData.title}
-              </h3>
-              <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap break-words text-xs text-gray-700 dark:text-gray-300">
-                {JSON.stringify(actionData.value, null, 2) ??
-                  String(actionData.value)}
-              </pre>
-            </section>
-          )}
-          <div className="mt-5 rounded-xl border border-orange-200 bg-orange-50 p-4 text-xs text-orange-900 dark:border-orange-500/20 dark:bg-orange-500/10 dark:text-orange-200">
-            Si l’API renvoie 404, l’action sera signalée comme bientôt
-            disponible. Les autres erreurs seront affichées sans être
-            assimilées à une fonctionnalité manquante.
-          </div>
         </>
       ) : null}
     </Modal>

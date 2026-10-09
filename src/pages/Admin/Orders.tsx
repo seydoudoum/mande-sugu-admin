@@ -3,18 +3,12 @@ import { getOrders, updateOrderStatus, type Order } from '../../api/admin-orders
 import AdminToast, {
   type ToastMessage,
 } from '../../components/admin/AdminToast'
-import AdminResourceActions from '../../components/admin/AdminResourceActions'
-import {
-  cancelAdminOrder,
-  getAdminOrder,
-  getAdminOrderHistory,
-  refundAdminOrder,
-} from '../../api/admin-extended'
 import {
   formatCurrency,
   formatRelativeDate,
   getOrderStatus,
 } from '../../components/dashboard/dashboardUtils'
+import { RefreshIcon } from '../../icons'
 
 const ORDER_STATUSES = [
   { value: 'pending', label: 'En attente' },
@@ -40,6 +34,7 @@ export default function AdminOrders() {
   const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState('')
   const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
   const [toast, setToast] = useState<ToastMessage | null>(null)
 
@@ -53,6 +48,7 @@ export default function AdminOrders() {
         status: statusFilter || undefined,
       })
       setOrders(response.data)
+      setTotal(response.pagination.total)
       setTotalPages(Math.max(1, response.pagination.totalPages))
     } catch (loadError) {
       console.error('loadOrders:', loadError)
@@ -98,14 +94,48 @@ export default function AdminOrders() {
   return (
     <div className="space-y-6">
       <AdminToast message={toast} onDismiss={() => setToast(null)} />
-      <header>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Commandes
-        </h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Consultez les commandes récentes et mettez à jour leur statut.
-        </p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-3xl">
+            Commandes
+          </h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Consultez les commandes et mettez à jour leur statut.
+          </p>
+        </div>
+        <button
+          className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:border-orange-300 hover:text-orange-600 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-orange-500"
+          disabled={loading}
+          onClick={() => void loadOrders()}
+          type="button"
+        >
+          <RefreshIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          Actualiser
+        </button>
       </header>
+
+      <section
+        aria-label="Statistiques des commandes"
+        className="grid grid-cols-1 gap-4 sm:grid-cols-3"
+      >
+        {[
+          { label: 'Commandes trouvées', value: total.toLocaleString('fr-FR'), color: 'text-blue-600 dark:text-blue-400' },
+          { label: 'En attente sur cette page', value: orders.filter((order) => order.status === 'pending').length.toLocaleString('fr-FR'), color: 'text-orange-600 dark:text-orange-400' },
+          { label: 'Montant affiché', value: formatCurrency(orders.reduce((sum, order) => sum + Number(order.total_amount), 0)), color: 'text-green-600 dark:text-green-400' },
+        ].map((metric) => (
+          <article
+            className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.03]"
+            key={metric.label}
+          >
+            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              {metric.label}
+            </p>
+            <p className={`mt-2 text-2xl font-bold tracking-tight ${metric.color}`}>
+              {metric.value}
+            </p>
+          </article>
+        ))}
+      </section>
 
       <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.03]">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -127,12 +157,6 @@ export default function AdminOrders() {
               ))}
             </select>
           </label>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Le contrat API de commandes expose uniquement la pagination et le
-            filtre par statut. Les filtres date, vendeur, client et montant,
-            ainsi que remboursement/annulation, nécessitent des endpoints
-            supplémentaires.
-          </p>
         </div>
 
         {error && (
@@ -261,34 +285,6 @@ export default function AdminOrders() {
           </div>
         )}
       </section>
-      <AdminResourceActions
-        actions={[
-          { key: 'details', label: 'Voir le détail', execute: getAdminOrder },
-          {
-            key: 'history',
-            label: 'Historique des statuts',
-            execute: getAdminOrderHistory,
-          },
-          {
-            key: 'cancel',
-            label: 'Annuler la commande',
-            confirm: (id) =>
-              `Annuler la commande #${id} ? Cette action sera envoyée au backend.`,
-            execute: cancelAdminOrder,
-          },
-          {
-            key: 'refund',
-            label: 'Demander le remboursement',
-            requiresPayload: true,
-            confirm: (id) =>
-              `Envoyer une demande de remboursement pour la commande #${id} ?`,
-            execute: refundAdminOrder,
-          },
-        ]}
-        description="Pour un remboursement, le contrat ne précise pas le corps de requête : fournissez le JSON attendu par le backend."
-        idLabel="Identifiant de la commande"
-        title="Détail, historique et actions avancées"
-      />
     </div>
   )
 }

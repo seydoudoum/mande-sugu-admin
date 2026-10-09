@@ -8,6 +8,7 @@ import {
 import AdminToast, {
   type ToastMessage,
 } from '../../components/admin/AdminToast'
+import { RefreshIcon } from '../../icons'
 
 function errorMessage(error: unknown): string {
   return error instanceof Error
@@ -21,6 +22,7 @@ export default function AdminProducts() {
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
   const [toast, setToast] = useState<ToastMessage | null>(null)
 
@@ -34,6 +36,7 @@ export default function AdminProducts() {
         search: search.trim() || undefined,
       })
       setProducts(response.data)
+      setTotal(response.pagination.total)
       setTotalPages(Math.max(1, response.pagination.totalPages))
     } catch (loadError) {
       console.error('loadProducts:', loadError)
@@ -98,14 +101,48 @@ export default function AdminProducts() {
   return (
     <div className="space-y-6">
       <AdminToast message={toast} onDismiss={() => setToast(null)} />
-      <header>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Produits
-        </h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Recherchez, modérez et gérez les produits de la marketplace.
-        </p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-3xl">
+            Produits
+          </h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Recherchez, modérez et gérez les produits de la marketplace.
+          </p>
+        </div>
+        <button
+          className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:border-orange-300 hover:text-orange-600 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-orange-500"
+          disabled={loading}
+          onClick={() => void loadProducts()}
+          type="button"
+        >
+          <RefreshIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          Actualiser
+        </button>
       </header>
+
+      <section
+        aria-label="Statistiques des produits"
+        className="grid grid-cols-1 gap-4 sm:grid-cols-3"
+      >
+        {[
+          { label: 'Produits trouvés', value: total, color: 'text-blue-600 dark:text-blue-400' },
+          { label: 'Actifs sur cette page', value: products.filter((product) => product.is_active).length, color: 'text-green-600 dark:text-green-400' },
+          { label: 'Stock faible sur cette page', value: products.filter((product) => product.stock < 5).length, color: 'text-orange-600 dark:text-orange-400' },
+        ].map((metric) => (
+          <article
+            className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.03]"
+            key={metric.label}
+          >
+            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              {metric.label}
+            </p>
+            <p className={`mt-2 text-3xl font-bold tracking-tight ${metric.color}`}>
+              {metric.value.toLocaleString('fr-FR')}
+            </p>
+          </article>
+        ))}
+      </section>
 
       <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.03]">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row">
@@ -125,12 +162,6 @@ export default function AdminProducts() {
             value={search}
           />
         </div>
-        <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">
-          La recherche est effectuée par le serveur. Le contrat actuel ne
-          propose pas de filtre par signalement, mise en avant, catégorie ou
-          statistiques de consultation.
-        </p>
-
         {error && (
           <div
             className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300"

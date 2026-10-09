@@ -7,22 +7,11 @@ import {
   updateUserRole,
   type User,
 } from '../../api/admin-users'
-import {
-  banUser,
-  forceUserLogout,
-  getAdminApiErrorMessage,
-  getUserActivity,
-  getUserLoginHistory,
-  getUserSessions,
-  resetUserPassword,
-  unbanUser,
-} from '../../api/admin-extended'
 import AdminToast, {
   type ToastMessage,
 } from '../../components/admin/AdminToast'
-import UserDetailModal, {
-  type UserAdminAction,
-} from '../../components/admin/UserDetailModal'
+import UserDetailModal from '../../components/admin/UserDetailModal'
+import { RefreshIcon } from '../../icons'
 
 const ROLES = [
   { value: 'client', label: 'Client', color: 'bg-blue-100 text-blue-700' },
@@ -55,18 +44,12 @@ export default function AdminUsers() {
   const [roleFilter, setRoleFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
   const [toast, setToast] = useState<ToastMessage | null>(null)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailError, setDetailError] = useState<string | null>(null)
-  const [actionLoading, setActionLoading] = useState<UserAdminAction | null>(
-    null
-  )
-  const [actionData, setActionData] = useState<{
-    title: string
-    value: unknown
-  } | null>(null)
 
   const loadUsers = useCallback(async () => {
     setLoading(true)
@@ -80,6 +63,7 @@ export default function AdminUsers() {
         status: statusFilter || undefined,
       })
       setUsers(response.data)
+      setTotal(response.pagination.total)
       setTotalPages(Math.max(1, response.pagination.totalPages))
     } catch (loadError) {
       console.error('loadUsers:', loadError)
@@ -153,7 +137,6 @@ export default function AdminUsers() {
   async function openUserDetails(user: User) {
     setSelectedUser(null)
     setDetailError(null)
-    setActionData(null)
     setDetailLoading(true)
     try {
       setSelectedUser(await getUserById(user.id))
@@ -162,81 +145,6 @@ export default function AdminUsers() {
       setDetailError(errorMessage(detailLoadError))
     } finally {
       setDetailLoading(false)
-    }
-  }
-
-  async function handleUserAdminAction(action: UserAdminAction) {
-    if (!selectedUser) return
-
-    const confirmations: Partial<Record<UserAdminAction, string>> = {
-      'reset-password': `Demander une réinitialisation du mot de passe pour ${selectedUser.full_name} ?`,
-      ban: `Bannir ${selectedUser.full_name} ?`,
-      unban: `Débannir ${selectedUser.full_name} ?`,
-      'force-logout': `Forcer la déconnexion de ${selectedUser.full_name} ?`,
-    }
-    const confirmation = confirmations[action]
-    if (confirmation && !window.confirm(confirmation)) return
-
-    const actionLabels: Record<UserAdminAction, string> = {
-      'reset-password': 'Réinitialisation du mot de passe',
-      ban: 'Bannissement',
-      unban: 'Débannissement',
-      'force-logout': 'Déconnexion forcée',
-      activity: 'Activité récente',
-      sessions: 'Sessions actives',
-      'login-history': 'Historique de connexion',
-    }
-
-    setActionLoading(action)
-    setActionData(null)
-    try {
-      let result: unknown
-      switch (action) {
-        case 'reset-password':
-          result = await resetUserPassword(selectedUser.id)
-          break
-        case 'ban':
-          result = await banUser(selectedUser.id)
-          break
-        case 'unban':
-          result = await unbanUser(selectedUser.id)
-          break
-        case 'force-logout':
-          result = await forceUserLogout(selectedUser.id)
-          break
-        case 'activity':
-          result = await getUserActivity(selectedUser.id)
-          break
-        case 'sessions':
-          result = await getUserSessions(selectedUser.id)
-          break
-        case 'login-history':
-          result = await getUserLoginHistory(selectedUser.id)
-          break
-      }
-
-      setActionData({ title: actionLabels[action], value: result })
-      setToast({
-        type: 'success',
-        text: `${actionLabels[action]} : opération effectuée.`,
-      })
-      if (action === 'ban' || action === 'unban') {
-        await loadUsers()
-        setSelectedUser(await getUserById(selectedUser.id))
-      }
-    } catch (actionError) {
-      console.error(`handleUserAdminAction (${action}):`, actionError)
-      const message = getAdminApiErrorMessage(actionError)
-      if (message === 'Fonctionnalité bientôt disponible') {
-        setToast({ type: 'info', text: message })
-      } else {
-        setToast({
-          type: 'error',
-          text: `${actionLabels[action]} : ${message}`,
-        })
-      }
-    } finally {
-      setActionLoading(null)
     }
   }
 
@@ -253,28 +161,58 @@ export default function AdminUsers() {
     <div className="space-y-6">
       <AdminToast message={toast} onDismiss={() => setToast(null)} />
       <UserDetailModal
-        actionData={actionData}
-        actionLoading={actionLoading}
         error={detailError}
         isOpen={detailLoading || selectedUser !== null || detailError !== null}
         loading={detailLoading}
-        onAction={(action) => void handleUserAdminAction(action)}
         onClose={() => {
           setSelectedUser(null)
           setDetailError(null)
-          setActionData(null)
         }}
         user={selectedUser}
       />
 
-      <header>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Utilisateurs
-        </h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Consultez les profils et gérez les accès de la plateforme.
-        </p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-3xl">
+            Utilisateurs
+          </h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Consultez les profils et gérez les accès de la plateforme.
+          </p>
+        </div>
+        <button
+          className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:border-orange-300 hover:text-orange-600 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-orange-500"
+          disabled={loading}
+          onClick={() => void loadUsers()}
+          type="button"
+        >
+          <RefreshIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          Actualiser
+        </button>
       </header>
+
+      <section
+        aria-label="Statistiques des utilisateurs"
+        className="grid grid-cols-1 gap-4 sm:grid-cols-3"
+      >
+        {[
+          { label: 'Utilisateurs trouvés', value: total, color: 'text-blue-600 dark:text-blue-400' },
+          { label: 'Actifs sur cette page', value: users.filter((user) => user.is_active).length, color: 'text-green-600 dark:text-green-400' },
+          { label: 'Vérifiés sur cette page', value: users.filter((user) => user.is_verified).length, color: 'text-orange-600 dark:text-orange-400' },
+        ].map((metric) => (
+          <article
+            className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.03]"
+            key={metric.label}
+          >
+            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              {metric.label}
+            </p>
+            <p className={`mt-2 text-3xl font-bold tracking-tight ${metric.color}`}>
+              {metric.value.toLocaleString('fr-FR')}
+            </p>
+          </article>
+        ))}
+      </section>
 
       <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.03]">
         <div className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -329,12 +267,6 @@ export default function AdminUsers() {
             <option value="inactive">Inactifs</option>
           </select>
         </div>
-
-        <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">
-          Les filtres transmis au serveur sont la recherche, le rôle et le
-          statut. Le filtrage par date d’inscription n’est pas exposé par le
-          contrat API actuel.
-        </p>
 
         {error && (
           <div

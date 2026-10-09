@@ -4,12 +4,14 @@ import { Outlet } from "react-router";
 import AppHeader from "./AppHeader";
 import AppSidebar from "./AppSidebar";
 import Backdrop from "./Backdrop";
+import Toast from "@/components/admin/Toast";
 
 const LayoutContent: React.FC = () => {
   const { isExpanded, isHovered, isMobileOpen } = useSidebar();
 
   return (
     <div className="min-h-screen xl:flex">
+      <Toast />
       <AppSidebar />
       <Backdrop />
 
